@@ -34,8 +34,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link href="/contact" className="glass-btn glass-btn-primary hidden lg:inline-flex">
-            Let&apos;s talk
+          <Link href="/order" className="glass-btn glass-btn-primary hidden lg:inline-flex">
+            Обсудить задачу
           </Link>
           <button
             type="button"
@@ -62,11 +62,11 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link
-            href="/contact"
+            href="/order"
             onClick={() => setOpen(false)}
             className="glass-btn glass-btn-primary"
           >
-            Let&apos;s talk
+            Обсудить задачу
           </Link>
         </div>
       ) : null}

@@ -7,8 +7,13 @@ import { logoutAction } from "@/app/actions/auth"
 const links = [
   { href: "/dashboard", label: "Обзор" },
   { href: "/dashboard/content", label: "Блог" },
+  { href: "/dashboard/pages", label: "Страницы" },
+  { href: "/dashboard/services", label: "Услуги" },
   { href: "/dashboard/journal", label: "Журнал" },
   { href: "/dashboard/leads", label: "Заявки" },
+  { href: "/dashboard/orders", label: "Заказы" },
+  { href: "/dashboard/todos", label: "Todo" },
+  { href: "/dashboard/access", label: "Доступ" },
 ]
 
 export function ShellNav({ email }: { email: string }) {

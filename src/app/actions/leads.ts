@@ -1,10 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createPublicLead, updateLeadStatus } from "@/data/leads"
+import { redirect } from "next/navigation"
+import { createPublicLead, deleteArchivedLead, updateLeadStatus } from "@/data/leads"
 import { requireOwner } from "@/data/auth"
 
-export type LeadFormState = { error?: string; ok?: boolean } | undefined
+export type LeadFormState = { error?: string } | undefined
 
 export async function submitLeadAction(
   _prev: LeadFormState,
@@ -18,7 +19,8 @@ export async function submitLeadAction(
     source: "contact",
   })
   if (!result.ok) return { error: result.error }
-  return { ok: true }
+  revalidatePath("/dashboard/leads")
+  redirect("/?sent=1")
 }
 
 export async function updateLeadStatusAction(formData: FormData) {
@@ -26,4 +28,21 @@ export async function updateLeadStatusAction(formData: FormData) {
   if (!owner) return
   await updateLeadStatus(String(formData.get("id") ?? ""), String(formData.get("status") ?? ""))
   revalidatePath("/dashboard/leads")
+  revalidatePath("/dashboard/leads/archive")
+}
+
+export async function archiveLeadAction(formData: FormData) {
+  const owner = await requireOwner()
+  if (!owner) return
+  await updateLeadStatus(String(formData.get("id") ?? ""), "archived")
+  revalidatePath("/dashboard/leads")
+  revalidatePath("/dashboard/leads/archive")
+}
+
+export async function deleteArchivedLeadAction(formData: FormData) {
+  const owner = await requireOwner()
+  if (!owner) return
+  await deleteArchivedLead(String(formData.get("id") ?? ""))
+  revalidatePath("/dashboard/leads")
+  revalidatePath("/dashboard/leads/archive")
 }

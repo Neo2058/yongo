@@ -13,9 +13,11 @@ const unbounded = Unbounded({
   subsets: ["latin", "cyrillic"],
 })
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: {
-    default: `${site.name} — блог и системы`,
+    default: `${site.name} — веб-разработка для бизнеса`,
     template: `%s · ${site.name}`,
   },
   description: site.description,
@@ -32,7 +34,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${manrope.variable} ${unbounded.variable} h-full antialiased`}
     >
-      <body id="top" className="min-h-full">
+      <body id="top" className="flex min-h-dvh flex-col">
         {children}
       </body>
     </html>

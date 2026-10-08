@@ -1,41 +1,21 @@
 export const site = {
   name: "Yongo",
-  role: "Full-stack & systems",
-  description:
-    "Публичный блог о сборке систем: React, Next.js, Nest.js, PHP, Unreal Engine 5, C++, 3D и инфраструктура с нуля.",
+  role: "Веб-разработчик · Laravel / JavaScript / Next.js",
+  description: "Разработка и доработка сайтов и бизнес-приложений: формы заявок, административные панели и автоматизация рабочих процессов. Laravel, JavaScript, Next.js.",
+  availability: "Доступен для проектной работы · 15–20 часов в неделю",
+  languages: "Русский · English · Deutsch · Français",
 } as const
 
 export const nav = [
-  { href: "/work", label: "Work" },
-  { href: "/services", label: "Services" },
-  { href: "/about", label: "About" },
-  { href: "/blog", label: "Blog" },
-  { href: "/contact", label: "Contact" },
+  { href: "/services", label: "Услуги" },
+  { href: "/work", label: "Проекты" },
+  { href: "/about", label: "Обо мне" },
+  { href: "/blog", label: "Блог" },
+  { href: "/contact", label: "Контакты" },
 ] as const
 
 export const stats = [
-  { value: "8+", label: "Слоёв стека" },
-  { value: "3", label: "Контура систем" },
-  { value: "UE5", label: "Realtime" },
-  { value: "VPS", label: "Сервер с нуля" },
-] as const
-
-export const skills = [
-  { name: "React / Next.js", value: 90 },
-  { name: "Nest.js / PHP", value: 86 },
-  { name: "UE5 / C++", value: 82 },
-  { name: "3ds Max / Blender", value: 80 },
-  { name: "Linux / Docker", value: 88 },
-  { name: "HTML / CSS / JS", value: 94 },
-] as const
-
-export const stack = [
-  { name: "React", mark: "R" },
-  { name: "Next.js", mark: "N" },
-  { name: "Nest.js", mark: "Ne" },
-  { name: "PHP", mark: "P" },
-  { name: "UE5", mark: "U" },
-  { name: "C++", mark: "C+" },
-  { name: "Docker", mark: "D" },
-  { name: "TypeScript", mark: "TS" },
+  { value: "2", label: "Коммерческих проекта запущены" },
+  { value: "≈25", label: "Пользователей ARM ежедневно" },
+  { value: "От идеи", label: "До запуска и сопровождения" },
 ] as const

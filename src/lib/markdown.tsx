@@ -42,11 +42,34 @@ export function renderMarkdown(source: string) {
 
     const image = block.match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
     if (image && allowedSrc(image[2])) {
+      const src = image[2]
+      const alt = image[1]
+      if (/\.(mp4|webm)$/i.test(src)) {
+        nodes.push(
+          <video
+            key={index}
+            src={src}
+            controls
+            className="mt-6 w-full rounded-2xl border border-line"
+          >
+            {alt}
+          </video>,
+        )
+        return
+      }
+      if (/\.(mp3|wav|ogg|m4a|weba)$/i.test(src)) {
+        nodes.push(
+          <audio key={index} src={src} controls className="mt-6 w-full">
+            {alt}
+          </audio>,
+        )
+        return
+      }
       nodes.push(
         <img
           key={index}
-          src={image[2]}
-          alt={image[1]}
+          src={src}
+          alt={alt}
           className="mt-6 w-full rounded-2xl border border-line"
         />,
       )

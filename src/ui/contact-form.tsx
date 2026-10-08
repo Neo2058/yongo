@@ -6,14 +6,6 @@ import { submitLeadAction, type LeadFormState } from "@/app/actions/leads"
 export function ContactForm() {
   const [state, action, pending] = useActionState(submitLeadAction, undefined as LeadFormState)
 
-  if (state?.ok) {
-    return (
-      <p className="mt-8 text-sm text-cyan">
-        Заявка записана. Я увижу её в админке.
-      </p>
-    )
-  }
-
   return (
     <form action={action} className="mt-8 flex flex-col gap-4">
       <label className="absolute -left-[9999px]" htmlFor="company">

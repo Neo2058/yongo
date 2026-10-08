@@ -53,12 +53,56 @@ const statements = [
     visibility TEXT NOT NULL,
     created_at TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS invites (
+    id TEXT PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    revoked_at TEXT,
+    created_user_id TEXT,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL,
+    service_slug TEXT,
+    service_title TEXT,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    author_id TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
 ]
+
+function hasColumn(table: string, column: string) {
+  const rows = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+  return rows.some((row) => row.name === column)
+}
 
 export function migrate() {
   sqlite.exec("BEGIN")
   try {
     for (const sql of statements) sqlite.exec(sql)
+    if (!hasColumn("users", "name")) {
+      sqlite.exec(`ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT ''`)
+    }
+    if (!hasColumn("users", "disabled_at")) {
+      sqlite.exec(`ALTER TABLE users ADD COLUMN disabled_at TEXT`)
+    }
+    sqlite.exec(`UPDATE invites SET expires_at = '9999-12-31T00:00:00.000Z' WHERE revoked_at IS NULL`)
     sqlite.exec("COMMIT")
   } catch (error) {
     sqlite.exec("ROLLBACK")

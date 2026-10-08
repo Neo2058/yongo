@@ -9,6 +9,7 @@ import { rateLimit } from "@/data/rate-limit"
 import { headers } from "next/headers"
 import { z } from "zod"
 import { migrate } from "@/data/migrate"
+import { notifyOwnerAfter } from "@/data/mail"
 
 const leadSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -61,10 +62,24 @@ export async function createPublicLead(input: {
     })
     .run()
 
+  notifyOwnerAfter(
+    `Заявка: ${parsed.data.name}`,
+    `Имя: ${parsed.data.name}\nПочта: ${parsed.data.email}\nИсточник: ${input.source ?? "contact"}\n\n${parsed.data.message}`,
+  )
+
   return { ok: true as const }
 }
 
-export async function listLeadsForOwner() {
+export async function updateLeadStatus(id: string, status: string) {
+  const owner = await requireOwner()
+  if (!owner) return { ok: false as const, error: "Нет доступа." }
+  const allowed = ["new", "qualified", "closed", "archived"]
+  if (!allowed.includes(status)) return { ok: false as const, error: "Неизвестный статус." }
+  await db.update(leads).set({ status }).where(eq(leads.id, id)).run()
+  return { ok: true as const }
+}
+
+export async function listLeadsForOwner(archived = false) {
   const owner = await requireOwner()
   if (!owner) return []
   const rows = await db
@@ -72,7 +87,8 @@ export async function listLeadsForOwner() {
     .from(leads)
     .orderBy(desc(leads.createdAt))
     .all()
-  return rows.map(
+  return rows
+    .map(
       (row): LeadDTO => ({
         id: row.id,
         name: row.name,
@@ -83,13 +99,16 @@ export async function listLeadsForOwner() {
         createdAt: row.createdAt,
       }),
     )
+    .filter((lead) => (archived ? lead.status === "archived" : lead.status !== "archived"))
 }
 
-export async function updateLeadStatus(id: string, status: string) {
+export async function deleteArchivedLead(id: string) {
   const owner = await requireOwner()
   if (!owner) return { ok: false as const, error: "Нет доступа." }
-  const allowed = ["new", "qualified", "closed"]
-  if (!allowed.includes(status)) return { ok: false as const, error: "Неизвестный статус." }
-  await db.update(leads).set({ status }).where(eq(leads.id, id)).run()
+  const row = await db.select().from(leads).where(eq(leads.id, id)).get()
+  if (!row || row.status !== "archived") {
+    return { ok: false as const, error: "Удалять можно только из архива." }
+  }
+  await db.delete(leads).where(eq(leads.id, id)).run()
   return { ok: true as const }
 }

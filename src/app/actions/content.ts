@@ -23,7 +23,9 @@ function asStatus(value: string): ContentStatus {
 }
 
 function asType(value: string): ContentType {
-  if (value === "briefing" || value === "case" || value === "service") return value
+  if (value === "briefing" || value === "case" || value === "service" || value === "page") {
+    return value
+  }
   return "article"
 }
 
@@ -40,23 +42,33 @@ export async function saveContentAction(
   const channel = asChannel(String(formData.get("channel") ?? "public"))
   const coverUpload = formData.get("coverFile")
   let cover = String(formData.get("cover") ?? "")
+  const visibility = channel === "internal" ? "internal" : "public"
 
   if (coverUpload instanceof File && coverUpload.size > 0) {
-    const saved = await saveOwnerImage(coverUpload, channel === "internal" ? "internal" : "public")
+    const saved = await saveOwnerImage(coverUpload, visibility)
     if (!saved.ok) return { error: saved.error }
     cover = saved.url
   }
 
+  let body = String(formData.get("body") ?? "")
+  const bodyFile = formData.get("bodyFile")
+  if (bodyFile instanceof File && bodyFile.size > 0) {
+    const saved = await saveOwnerImage(bodyFile, visibility)
+    if (!saved.ok) return { error: saved.error }
+    body = `${body.trim()}\n\n![${bodyFile.name}](${saved.url})`
+  }
+
+  const type = asType(String(formData.get("type") ?? "article"))
   const result = await saveContent(
     {
       title: String(formData.get("title") ?? ""),
       slug: String(formData.get("slug") ?? ""),
       excerpt: String(formData.get("excerpt") ?? ""),
-      body: String(formData.get("body") ?? ""),
+      body,
       cover,
       coverAlt: String(formData.get("coverAlt") ?? ""),
       channel,
-      type: asType(String(formData.get("type") ?? "article")),
+      type,
       status: asStatus(String(formData.get("status") ?? "draft")),
       featured: formData.get("featured") === "on",
       kicker: String(formData.get("kicker") ?? ""),
@@ -71,11 +83,24 @@ export async function saveContentAction(
   if (!result.ok) return { error: result.error }
 
   revalidatePath("/blog")
+  revalidatePath("/services")
+  revalidatePath("/work")
+  revalidatePath("/about")
   revalidatePath("/")
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/content")
   revalidatePath("/dashboard/journal")
-  redirect(channel === "internal" ? "/dashboard/journal" : "/dashboard/content")
+  revalidatePath("/dashboard/services")
+  revalidatePath("/dashboard/pages")
+  redirect(
+    type === "page"
+      ? "/dashboard/pages"
+      : channel === "internal"
+        ? "/dashboard/journal"
+        : channel === "shop"
+          ? "/dashboard/services"
+          : "/dashboard/content",
+  )
 }
 
 export async function deleteContentAction(formData: FormData) {
@@ -84,9 +109,14 @@ export async function deleteContentAction(formData: FormData) {
   const id = String(formData.get("id") ?? "")
   await deleteContent(id)
   revalidatePath("/blog")
+  revalidatePath("/services")
+  revalidatePath("/work")
+  revalidatePath("/about")
   revalidatePath("/")
   revalidatePath("/dashboard/content")
   revalidatePath("/dashboard/journal")
+  revalidatePath("/dashboard/services")
+  revalidatePath("/dashboard/pages")
 }
 
 export async function uploadBodyImageAction(

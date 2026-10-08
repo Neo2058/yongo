@@ -1,16 +1,22 @@
-import { updateLeadStatusAction } from "@/app/actions/leads"
+import Link from "next/link"
+import { archiveLeadAction, updateLeadStatusAction } from "@/app/actions/leads"
 import { listLeadsForOwner } from "@/data/leads"
 
 export const metadata = { title: "Заявки" }
 
 export default async function LeadsPage() {
-  const leads = await listLeadsForOwner()
+  const leads = await listLeadsForOwner(false)
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <p className="kicker">CRM</p>
-        <h1 className="display mt-2 text-3xl">Заявки</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="kicker">CRM</p>
+          <h1 className="display mt-2 text-3xl">Заявки</h1>
+        </div>
+        <Link href="/dashboard/leads/archive" className="text-xs tracking-[0.14em] text-cyan uppercase no-underline">
+          Архив →
+        </Link>
       </div>
       <ul className="flex flex-col gap-3">
         {leads.map((lead) => (
@@ -22,21 +28,31 @@ export default async function LeadsPage() {
                   {lead.email} · {lead.createdAt.slice(0, 10)} · {lead.source}
                 </p>
               </div>
-              <form action={updateLeadStatusAction} className="flex gap-2">
-                <input type="hidden" name="id" value={lead.id} />
-                <select
-                  name="status"
-                  defaultValue={lead.status}
-                  className="rounded-full border border-line bg-black/30 px-3 py-2 text-xs"
-                >
-                  <option value="new">new</option>
-                  <option value="qualified">qualified</option>
-                  <option value="closed">closed</option>
-                </select>
-                <button className="glass-btn glass-btn-ghost" type="submit">
-                  OK
-                </button>
-              </form>
+              <div className="flex flex-wrap gap-2">
+                <form action={updateLeadStatusAction} className="flex gap-2">
+                  <input type="hidden" name="id" value={lead.id} />
+                  <select
+                    name="status"
+                    defaultValue={lead.status}
+                    className="rounded-full border border-line bg-black/30 px-3 py-2 text-xs"
+                  >
+                    <option value="new">new</option>
+                    <option value="qualified">qualified</option>
+                    <option value="closed">closed</option>
+                  </select>
+                  <button className="glass-btn glass-btn-ghost" type="submit">
+                    OK
+                  </button>
+                </form>
+                {lead.status === "closed" ? (
+                  <form action={archiveLeadAction}>
+                    <input type="hidden" name="id" value={lead.id} />
+                    <button className="glass-btn glass-btn-ghost" type="submit">
+                      В архив
+                    </button>
+                  </form>
+                ) : null}
+              </div>
             </div>
             <p className="mt-3 whitespace-pre-wrap text-sm text-muted">{lead.message}</p>
           </li>

@@ -9,7 +9,7 @@ interface EditPageProps {
 export default async function EditContentPage({ params }: EditPageProps) {
   const { id } = await params
   const post = await getContentForOwner(id)
-  if (!post || post.channel !== "public") notFound()
+  if (!post || post.channel !== "public" || post.type !== "article") notFound()
 
   return (
     <div className="flex flex-col gap-4">

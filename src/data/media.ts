@@ -13,9 +13,16 @@ const ALLOWED = new Map([
   ["image/png", ".png"],
   ["image/webp", ".webp"],
   ["image/gif", ".gif"],
+  ["video/mp4", ".mp4"],
+  ["video/webm", ".webm"],
+  ["audio/mpeg", ".mp3"],
+  ["audio/mp4", ".m4a"],
+  ["audio/wav", ".wav"],
+  ["audio/ogg", ".ogg"],
+  ["audio/webm", ".weba"],
 ])
 
-const MAX_BYTES = 5 * 1024 * 1024
+const MAX_BYTES = 40 * 1024 * 1024
 
 export async function saveOwnerImage(file: File, visibility: "public" | "internal") {
   const owner = await requireOwner()
@@ -24,7 +31,7 @@ export async function saveOwnerImage(file: File, visibility: "public" | "interna
   if (file.size > MAX_BYTES) return { ok: false as const, error: "Файл больше 5 МБ." }
 
   const ext = ALLOWED.get(file.type)
-  if (!ext) return { ok: false as const, error: "Нужен JPEG, PNG, WebP или GIF." }
+  if (!ext) return { ok: false as const, error: "Нужен JPEG, PNG, WebP, GIF, MP4, WebM, MP3, WAV или OGG." }
 
   const filename = `${randomToken()}${ext}`
   const dir = path.join(process.cwd(), "storage", visibility)

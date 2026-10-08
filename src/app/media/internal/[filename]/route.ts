@@ -1,14 +1,14 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { NextResponse } from "next/server"
-import { getSessionUser } from "@/data/auth"
+import { requireBriefingUser } from "@/data/auth"
 import { getMediaRecord } from "@/data/media"
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ filename: string }> },
 ) {
-  const user = await getSessionUser()
+  const user = await requireBriefingUser()
   if (!user) return new NextResponse(null, { status: 404 })
 
   const { filename } = await context.params

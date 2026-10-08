@@ -3,8 +3,14 @@
 import { useActionState } from "react"
 import { loginAction, type AuthState } from "@/app/actions/auth"
 
-export function LoginForm() {
-  const [state, action, pending] = useActionState(loginAction, undefined as AuthState)
+export function LoginForm({
+  actionFn = loginAction,
+  submitLabel = "Войти",
+}: {
+  actionFn?: typeof loginAction
+  submitLabel?: string
+}) {
+  const [state, action, pending] = useActionState(actionFn, undefined as AuthState)
 
   return (
     <form action={action} className="mt-8 flex flex-col gap-4">
@@ -33,7 +39,7 @@ export function LoginForm() {
       </label>
       {state?.error ? <p className="text-sm text-red-300">{state.error}</p> : null}
       <button className="glass-btn glass-btn-primary" disabled={pending} type="submit">
-        {pending ? "Входим…" : "Войти"}
+        {pending ? "Входим…" : submitLabel}
       </button>
     </form>
   )

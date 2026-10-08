@@ -5,7 +5,7 @@ import { listContentsForOwner } from "@/data/content"
 export const metadata = { title: "Блог — админка" }
 
 export default async function ContentListPage() {
-  const posts = (await listContentsForOwner("public"))
+  const posts = await listContentsForOwner("public", "article")
 
   return (
     <div className="flex flex-col gap-4">

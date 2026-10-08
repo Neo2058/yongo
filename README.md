@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Yongo
 
-## Getting Started
+Публичный сайт разработчика: каталог услуг, заказ без оплаты, блог, CMS/CRM и закрытый брифинг для руководителей. Next.js 16, React 19, SQLite, тёмная glass-витрина.
 
-First, run the development server:
+План и ограничения: [`docs/development-plan.md`](docs/development-plan.md).
+
+## Локально
+
+Нужны Node 22 и Yarn 4 (`corepack enable`).
 
 ```bash
-npm run dev
-# or
+cp .env.example .env.local
+# смените OWNER_EMAIL и OWNER_PASSWORD (не короче 10 символов)
+yarn
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000). Админка: `/dashboard/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+yarn lint
+yarn build
+yarn backup
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`yarn backup` копирует `data/yongo.sqlite` в `data/backups/`. На VPS поставьте в cron раз в сутки.
 
-## Learn More
+## Почта
 
-To learn more about Next.js, take a look at the following resources:
+Заявка и заказ сначала пишутся в SQLite. Письмо владельцу — побочный эффект.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Если `SMTP_HOST` пустой, в логе будет `SMTP не настроен, запись уже в БД.` Запись не теряется.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Docker / VPS
 
-## Deploy on Vercel
+Это файловая SQLite-база. Нужен сервер с диском, не serverless.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+mkdir -p data storage
+sudo chown 1001:1001 data storage
+cp .env.example .env.local
+# SITE_URL=https://ваш-домен
+# OWNER_PASSWORD — не example-значение
+docker compose up --build -d
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Проксируйте HTTPS на порт 3000. Cookie `Secure` включается при `NODE_ENV=production`.
+
+## Postgres позже
+
+DAL уже отделён (`src/data/*`). Смена драйвера Drizzle на `postgres` не требует новой CMS. Пока локально и на одном VPS достаточно SQLite + бэкап файла.
+
+## Чего нет в этой версии
+
+Онлайн-оплата, кабинет клиента, Nest.js и отдельный редактор кейсов в CMS.
+
+## Портфолио
+
+Три кейса доступны на `/work/[slug]`. Тексты, добавление скриншотов и безопасное обновление существующих шаблонов описаны в [`docs/portfolio.md`](docs/portfolio.md).
