@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-manrope: "Manrope Variable";
+  --font-unbounded: "Unbounded Variable";
   --background: #030918;
   --foreground: #e8f3ff;
   --muted: #8aa0c2;

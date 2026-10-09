@@ -27,6 +27,7 @@ export function BlogCard({
         {post.cover ? (
           <Image
             src={post.cover}
+              unoptimized={post.cover.startsWith("/media/")}
             alt={post.coverAlt || post.title}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"

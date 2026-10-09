@@ -5,18 +5,23 @@
   "packageManager": "yarn@4.17.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint . && tsc --noEmit",
-    "backup": "node scripts/backup-sqlite.mjs"
+    "backup": "node scripts/backup-sqlite.mjs",
+    "owner:password": "node scripts/owner-password.mjs",
+    "test:security": "node --test tests/security.test.mjs",
+    "test:production": "node tests/production-smoke.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0",
+    "@fontsource-variable/unbounded": "5.3.0",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
-    "next": "16.2.12",
-    "nodemailer": "^10.0.8",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "next": "16.4.0",
+    "nodemailer": "^10.0.16",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "server-only": "^0.0.1",
     "zod": "^4.5.4"
   },
@@ -28,9 +33,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
-    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "^16.3.5",
+    "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

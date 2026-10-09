@@ -12,5 +12,6 @@ mkdirSync(dataDir, { recursive: true })
 export const sqlite = new Database(path.join(dataDir, "yongo.sqlite"))
 sqlite.pragma("journal_mode = WAL")
 sqlite.pragma("foreign_keys = ON")
+sqlite.pragma("busy_timeout = 5000")
 
 export const db = drizzle(sqlite, { schema })

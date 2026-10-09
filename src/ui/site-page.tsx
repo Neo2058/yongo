@@ -17,6 +17,7 @@ export function SitePageView({
           <div className="relative aspect-[2.3/1] min-h-[220px]">
             <Image
               src={page.cover}
+              unoptimized={page.cover.startsWith("/media/")}
               alt={page.coverAlt || page.title}
               fill
               sizes="(max-width: 1200px) 100vw, 1120px"

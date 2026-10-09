@@ -39,6 +39,7 @@ export default async function ServicePage({ params }: ServicePageProps) {
           <div className="relative aspect-[2.3/1] min-h-[220px]">
             <Image
               src={service.cover}
+              unoptimized={service.cover.startsWith("/media/")}
               alt={service.coverAlt || service.title}
               fill
               sizes="(max-width: 1200px) 100vw, 1120px"

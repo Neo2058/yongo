@@ -27,6 +27,9 @@ async function sendOwnerMail(subject: string, text: string) {
       host: config.host,
       port: config.port,
       secure: config.secure,
+      requireTLS: !config.secure,
+      connectionTimeout: 10000,
+      socketTimeout: 20000,
       auth: config.user ? { user: config.user, pass: config.pass } : undefined,
     })
     await transport.sendMail({
@@ -36,7 +39,8 @@ async function sendOwnerMail(subject: string, text: string) {
       text,
     })
   } catch (error) {
-    console.error("[mail] не отправилось, запись в БД сохранена.", error)
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : "unknown"
+    console.error("[mail] не отправилось, запись в БД сохранена. Код:", /^[A-Z0-9_]+$/.test(code) ? code : "unknown")
   }
 }
 

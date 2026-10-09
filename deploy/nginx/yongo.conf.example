@@ -1,0 +1,64 @@
+# Install in nginx http context. Replace example.com and certificate paths.
+map $request_method $yongo_write_key {
+    default "";
+    POST $binary_remote_addr;
+}
+map $uri $yongo_log_path {
+    default $uri;
+    ~^/i/ /i/[redacted];
+}
+log_format yongo '$remote_addr [$time_local] "$request_method $yongo_log_path" $status $body_bytes_sent';
+limit_req_zone $binary_remote_addr zone=yongo_requests:10m rate=10r/s;
+limit_req_zone $yongo_write_key zone=yongo_writes:10m rate=10r/m;
+
+server {
+    listen 80;
+    server_name example.com;
+    access_log /var/log/nginx/yongo.access.log yongo;
+    return 308 https://example.com$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name example.com;
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    access_log /var/log/nginx/yongo.access.log yongo;
+    server_tokens off;
+    limit_req zone=yongo_requests burst=30 nodelay;
+    limit_req zone=yongo_writes burst=20 nodelay;
+    limit_req_status 429;
+    client_max_body_size 1m;
+    client_body_timeout 15s;
+
+    location = /dashboard/login {
+        client_max_body_size 16k;
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+    location /dashboard/ {
+        client_max_body_size 41m;
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+    location ^~ /i/ {
+        client_max_body_size 16k;
+        # Invite tokens must not appear in access logs.
+        access_log off;
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+    location = /gate {
+        client_max_body_size 16k;
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+    location = /contact {
+        client_max_body_size 16k;
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+    location = /order {
+        client_max_body_size 16k;
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+    location / {
+        include /etc/nginx/snippets/yongo-proxy.conf;
+    }
+}

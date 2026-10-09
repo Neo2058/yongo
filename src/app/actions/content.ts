@@ -38,6 +38,9 @@ export async function saveContentAction(
   const owner = await requireOwner()
   if (!owner) return { error: "Нет доступа." }
 
+  const uploads = [formData.get("coverFile"), formData.get("bodyFile")]
+  const totalBytes = uploads.reduce<number>((total, file) => total + (file instanceof File ? file.size : 0), 0)
+  if (totalBytes > 40 * 1024 * 1024) return { error: "Суммарный размер файлов больше 40 МБ." }
   const id = String(formData.get("id") ?? "")
   const channel = asChannel(String(formData.get("channel") ?? "public"))
   const coverUpload = formData.get("coverFile")

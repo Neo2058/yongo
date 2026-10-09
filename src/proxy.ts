@@ -31,9 +31,12 @@ function applySecurityHeaders(response: NextResponse, nonce: string, pathname: s
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/briefing") ||
     pathname.startsWith("/gate") ||
-    pathname.startsWith("/i/")
+    pathname.startsWith("/i/") ||
+    pathname.startsWith("/media/")
   ) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow")
+    response.headers.set("Cache-Control", "private, no-store")
+    response.headers.set("Referrer-Policy", "no-referrer")
   }
   return response
 }
@@ -61,13 +64,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    {
-      source: "/((?!_next/static|_next/image|favicon.ico|images/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
-      missing: [
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-      ],
-    },
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|images/).*)"],
 }

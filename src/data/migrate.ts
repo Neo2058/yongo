@@ -2,7 +2,19 @@ import "server-only"
 
 import { sqlite } from "@/data/db"
 
+let migrated = false
+
 const statements = [
+  `CREATE TABLE IF NOT EXISTS rate_limits (
+    key_hash TEXT PRIMARY KEY,
+    count INTEGER NOT NULL,
+    reset_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS rate_limits_expiry ON rate_limits(reset_at)`,
+  `CREATE TABLE IF NOT EXISTS schema_migrations (
+    id TEXT PRIMARY KEY,
+    applied_at TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -93,7 +105,8 @@ function hasColumn(table: string, column: string) {
 }
 
 export function migrate() {
-  sqlite.exec("BEGIN")
+  if (migrated) return
+  sqlite.exec("BEGIN IMMEDIATE")
   try {
     for (const sql of statements) sqlite.exec(sql)
     if (!hasColumn("users", "name")) {
@@ -102,8 +115,17 @@ export function migrate() {
     if (!hasColumn("users", "disabled_at")) {
       sqlite.exec(`ALTER TABLE users ADD COLUMN disabled_at TEXT`)
     }
-    sqlite.exec(`UPDATE invites SET expires_at = '9999-12-31T00:00:00.000Z' WHERE revoked_at IS NULL`)
+    // Bound legacy unused links once; never extend their lifetime on requests.
+    const expiryMigration = "2026-10-08-invite-expiry"
+    if (!sqlite.prepare("SELECT id FROM schema_migrations WHERE id = ?").get(expiryMigration)) {
+      const legacyDeadline = new Date(Date.now() + 7 * 86400000).toISOString()
+      sqlite.prepare(`UPDATE invites SET expires_at = ?
+        WHERE used_at IS NULL AND revoked_at IS NULL AND expires_at > ?`)
+        .run(legacyDeadline, legacyDeadline)
+      sqlite.prepare("INSERT INTO schema_migrations VALUES (?, ?)").run(expiryMigration, new Date().toISOString())
+    }
     sqlite.exec("COMMIT")
+    migrated = true
   } catch (error) {
     sqlite.exec("ROLLBACK")
     throw error

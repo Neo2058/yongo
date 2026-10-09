@@ -6,6 +6,7 @@ import { tasks } from "@/data/schema"
 import { newId, nowIso } from "@/data/crypto"
 import { requireBriefingUser, requireOwner } from "@/data/auth"
 import { migrate } from "@/data/migrate"
+import { rateLimit } from "@/data/rate-limit"
 
 export type TaskDTO = {
   id: string
@@ -37,8 +38,12 @@ export async function createTaskFromBriefing(title: string, body: string) {
   migrate()
   const trimmed = title.trim()
   const text = body.trim()
-  if (trimmed.length < 3) return { ok: false as const, error: "Заголовок слишком короткий." }
-  if (text.length < 5) return { ok: false as const, error: "Опишите задачу." }
+  if (trimmed.length < 3 || trimmed.length > 180) return { ok: false as const, error: "Заголовок слишком короткий." }
+  if (text.length < 5 || text.length > 8000) return { ok: false as const, error: "Опишите задачу." }
+
+  if (!rateLimit(`task:${user.id}`, 20, 60 * 60 * 1000).ok) {
+    return { ok: false as const, error: "Слишком много задач. Попробуйте позже." }
+  }
 
   await db.insert(tasks).values({
     id: newId(),

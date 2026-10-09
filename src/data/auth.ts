@@ -3,11 +3,13 @@ import "server-only"
 import { and, eq, isNull } from "drizzle-orm"
 import { cache } from "react"
 import { cookies, headers } from "next/headers"
-import { db } from "@/data/db"
+import { db, sqlite } from "@/data/db"
 import { hashPassword, hashToken, newId, nowIso, randomToken, verifyPassword } from "@/data/crypto"
 import { migrate } from "@/data/migrate"
 import { rateLimit } from "@/data/rate-limit"
+import { requestIp } from "@/data/request-ip"
 import { sessions, users } from "@/data/schema"
+import { z } from "zod"
 
 const COOKIE = "yongo_session"
 const SESSION_DAYS = 14
@@ -19,31 +21,27 @@ export type SessionUser = {
   role: "owner" | "manager"
 }
 
-function asRole(value: string): SessionUser["role"] {
-  return value === "manager" ? "manager" : "owner"
+function asRole(value: string): SessionUser["role"] | null {
+  return value === "manager" || value === "owner" ? value : null
 }
 
 export async function bootstrap() {
   migrate()
+  if (db.select({ id: users.id }).from(users).limit(1).get()) return
   const email = process.env.OWNER_EMAIL?.trim().toLowerCase()
   const password = process.env.OWNER_PASSWORD
-  if (!email || !password) return
-  if (password === "change-me-at-least-10" || password.length < 10) {
-    console.error("[auth] OWNER_PASSWORD слишком слабый. Смените его до публичного деплоя.")
-    if (process.env.NODE_ENV === "production") return
+  if (!email || !z.email().max(120).safeParse(email).success || !password || password === "change-me-at-least-10" || password.length < 12 || password.length > 256) {
+    throw new Error("Set OWNER_EMAIL and a unique OWNER_PASSWORD (12–256 characters) before initializing the database.")
   }
-
-  const existing = await db.select().from(users).where(eq(users.email, email)).get()
-  if (existing) return
-
-  await db.insert(users).values({
-    id: newId(),
-    email,
-    name: "Владелец",
-    passwordHash: await hashPassword(password),
-    role: "owner",
-    createdAt: nowIso(),
-  }).run()
+  const passwordHash = await hashPassword(password)
+  sqlite.transaction(() => {
+    // Recheck after scrypt: concurrent first requests must not create extra owners.
+    if (db.select({ id: users.id }).from(users).limit(1).get()) return
+    db.insert(users).values({
+      id: newId(), email, name: "Владелец", passwordHash,
+      role: "owner", createdAt: nowIso(),
+    }).run()
+  }).immediate()
 }
 
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
@@ -70,7 +68,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   if (!row) return null
   if (row.disabledAt) return null
-  if (new Date(row.expiresAt).getTime() < Date.now()) return null
+  const role = asRole(row.role)
+  if (!role || !(new Date(row.expiresAt).getTime() > Date.now())) return null
 
   await db
     .update(sessions)
@@ -82,7 +81,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     id: row.userId,
     email: row.email,
     name: row.name || row.email,
-    role: asRole(row.role),
+    role,
   }
 })
 
@@ -98,16 +97,24 @@ export async function requireBriefingUser() {
   return user
 }
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, expectedPasswordHash?: string) {
   const token = randomToken()
   const expires = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000)
-  await db.insert(sessions).values({
-    id: newId(),
-    userId,
-    tokenHash: hashToken(token),
-    expiresAt: expires.toISOString(),
-    lastSeenAt: nowIso(),
-  }).run()
+  migrate()
+  const created = sqlite.transaction(() => {
+    const user = db.select().from(users).where(eq(users.id, userId)).get()
+    if (!user || user.disabledAt || !asRole(user.role) ||
+        (expectedPasswordHash !== undefined && user.passwordHash !== expectedPasswordHash)) return false
+    db.insert(sessions).values({
+      id: newId(),
+      userId,
+      tokenHash: hashToken(token),
+      expiresAt: expires.toISOString(),
+      lastSeenAt: nowIso(),
+    }).run()
+    return true
+  }).immediate()
+  if (!created) return false
   const jar = await cookies()
   jar.set(COOKIE, token, {
     httpOnly: true,
@@ -116,39 +123,42 @@ export async function createSession(userId: string) {
     path: "/",
     expires,
   })
+  return true
 }
 
-export async function loginUser(email: string, password: string) {
+export async function loginUser(email: string, password: string, ownerOnly = false) {
   await bootstrap()
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local"
+  const ip = requestIp(await headers())
   const limited = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000)
   if (!limited.ok) {
     return { ok: false as const, error: "Слишком много попыток. Подождите 15 минут." }
   }
 
   const normalized = email.trim().toLowerCase()
+  if (normalized.length > 120 || password.length > 256 || !password) {
+    return { ok: false as const, error: "Неверная почта или пароль." }
+  }
+  if (!rateLimit(`login-account:${normalized}`, 20, 15 * 60 * 1000).ok) {
+    return { ok: false as const, error: "Слишком много попыток. Подождите 15 минут." }
+  }
   const user = await db.select().from(users).where(eq(users.email, normalized)).get()
   const dummy = "00".repeat(16) + ":" + "00".repeat(64)
   const valid = user ? await verifyPassword(password, user.passwordHash) : await verifyPassword(password, dummy)
 
-  if (!user || !valid || user.disabledAt) {
+  const role = user ? asRole(user.role) : null
+  if (!user || !valid || user.disabledAt || !role || (ownerOnly && role !== "owner")) {
     return { ok: false as const, error: "Неверная почта или пароль." }
   }
 
-  await createSession(user.id)
+  if (!await createSession(user.id, user.passwordHash)) return { ok: false as const, error: "Неверная почта или пароль." }
   return {
     ok: true as const,
-    role: asRole(user.role),
+    role,
   }
 }
 
 export async function loginOwner(email: string, password: string) {
-  const result = await loginUser(email, password)
-  if (!result.ok) return result
-  if (result.role !== "owner") {
-    return { ok: false as const, error: "Неверная почта или пароль." }
-  }
-  return result
+  return loginUser(email, password, true)
 }
 
 export async function logoutSession() {
@@ -177,8 +187,14 @@ export async function revokeUserSessions(userId: string) {
 }
 
 export async function disableManager(userId: string) {
-  await db.update(users).set({ disabledAt: nowIso() }).where(eq(users.id, userId)).run()
-  await revokeUserSessions(userId)
+  migrate()
+  sqlite.transaction(() => {
+    const user = db.select().from(users).where(eq(users.id, userId)).get()
+    if (!user || user.role !== "manager") return
+    const now = nowIso()
+    db.update(users).set({ disabledAt: now }).where(eq(users.id, userId)).run()
+    db.update(sessions).set({ revokedAt: now }).where(eq(sessions.userId, userId)).run()
+  }).immediate()
 }
 
 export const SESSION_COOKIE = COOKIE

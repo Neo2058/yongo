@@ -46,6 +46,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <div className="relative aspect-[2.3/1] min-h-[220px]">
           <Image
             src={post.cover}
+              unoptimized={post.cover.startsWith("/media/")}
             alt={post.coverAlt || post.title}
             fill
             sizes="(max-width: 1200px) 100vw, 1120px"

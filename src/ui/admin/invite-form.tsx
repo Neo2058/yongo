@@ -32,7 +32,7 @@ export function InviteForm() {
       {state?.url ? (
         <div className="rounded-2xl border border-cyan/30 bg-cyan/10 p-4 text-sm">
           <p className="text-cyan">
-            Перешлите {state.email}. Ссылка одноразовая, доступ потом отзывается кнопкой ниже:
+            Перешлите {state.email}. Ссылка одноразовая и действует 7 дней. После входа доступ сохраняется до отзыва:
           </p>
           <p
             id="invite-url"

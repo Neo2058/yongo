@@ -31,6 +31,7 @@ export function LoginForm({
           id="password"
           name="password"
           type="password"
+          maxLength={256}
           autoComplete="current-password"
           required
           minLength={10}

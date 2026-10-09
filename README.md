@@ -4,13 +4,15 @@
 
 План и ограничения: [`docs/development-plan.md`](docs/development-plan.md).
 
+Подготовка к production, журнал исправлений, миграция и оставшиеся задачи: [`docs/production-security.md`](docs/production-security.md).
+
 ## Локально
 
 Нужны Node 22 и Yarn 4 (`corepack enable`).
 
 ```bash
 cp .env.example .env.local
-# смените OWNER_EMAIL и OWNER_PASSWORD (не короче 10 символов)
+# смените OWNER_EMAIL и OWNER_PASSWORD (12–256 символов)
 yarn
 yarn dev
 ```
@@ -19,11 +21,14 @@ yarn dev
 
 ```bash
 yarn lint
+yarn test:security
 yarn build
 yarn backup
 ```
 
-`yarn backup` копирует `data/yongo.sqlite` в `data/backups/`. На VPS поставьте в cron раз в сутки.
+`yarn backup` создаёт снимок SQLite и `storage/` в `data/backups/`, проверяет БД и хранит 7 завершённых снимков. На VPS настройте ежедневный запуск и зашифрованную копию вне сервера. Восстановление описано в production-инструкции.
+
+Пароль существующего владельца меняется через `yarn owner:password owner@example.com` (скрытый ввод, отзыв всех сессий), а не изменением `.env.local`. Bootstrap из env выполняется только при пустой таблице users.
 
 ## Почта
 
@@ -44,7 +49,11 @@ cp .env.example .env.local
 docker compose up --build -d
 ```
 
-Проксируйте HTTPS на порт 3000. Cookie `Secure` включается при `NODE_ENV=production`.
+Порт 3000 доступен только на loopback. Настройте HTTPS через reverse proxy; примеры Nginx находятся в `deploy/nginx/`. После настройки приватного proxy, перезаписывающего `X-Real-IP`, установите `TRUST_PROXY=1`. Cookie `Secure` включается при `NODE_ENV=production`.
+
+Manrope и Unbounded поставляются локальными Fontsource-пакетами: сборка и браузер не запрашивают Google Fonts.
+
+Неиспользованные приглашения действуют 7 дней; принятый доступ — до отзыва. Uploads черновиков/архивов не выдаются анониму, закрытых черновиков — менеджеру. При смене канала public/internal вложения нужно загрузить заново.
 
 ## Postgres позже
 

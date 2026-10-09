@@ -7,6 +7,7 @@ import { mediaFiles } from "@/data/schema"
 import { newId, nowIso, randomToken } from "@/data/crypto"
 import { requireOwner } from "@/data/auth"
 import { eq } from "drizzle-orm"
+import { migrate } from "@/data/migrate"
 
 const ALLOWED = new Map([
   ["image/jpeg", ".jpg"],
@@ -28,7 +29,7 @@ export async function saveOwnerImage(file: File, visibility: "public" | "interna
   const owner = await requireOwner()
   if (!owner) return { ok: false as const, error: "Нет доступа." }
   if (!file || file.size === 0) return { ok: false as const, error: "Файл не выбран." }
-  if (file.size > MAX_BYTES) return { ok: false as const, error: "Файл больше 5 МБ." }
+  if (file.size > MAX_BYTES) return { ok: false as const, error: "Файл больше 40 МБ." }
 
   const ext = ALLOWED.get(file.type)
   if (!ext) return { ok: false as const, error: "Нужен JPEG, PNG, WebP, GIF, MP4, WebM, MP3, WAV или OGG." }
@@ -55,5 +56,6 @@ export async function saveOwnerImage(file: File, visibility: "public" | "interna
 }
 
 export async function getMediaRecord(filename: string) {
+  migrate()
   return await db.select().from(mediaFiles).where(eq(mediaFiles.filename, filename)).get()
 }

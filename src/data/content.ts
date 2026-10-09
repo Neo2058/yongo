@@ -9,6 +9,7 @@ import { posts as seedPosts, type PostBlock } from "@/content/blog"
 import { seedPages } from "@/content/pages"
 import { seedServices } from "@/content/services"
 import { migrate } from "@/data/migrate"
+import { validateContentMedia } from "@/data/media-policy"
 
 export type ContentChannel = "public" | "internal" | "shop"
 export type ContentStatus = "draft" | "published" | "archived"
@@ -211,7 +212,7 @@ export async function listPublishedShopServices() {
   const rows = await db
     .select()
     .from(contents)
-    .where(and(eq(contents.channel, "shop"), eq(contents.status, "published")))
+    .where(and(eq(contents.channel, "shop"), eq(contents.type, "service"), eq(contents.status, "published")))
     .orderBy(desc(contents.featured), desc(contents.publishedAt))
     .all()
   return rows.map(toDTO)
@@ -223,7 +224,7 @@ export async function getPublishedShopService(slug: string) {
     .select()
     .from(contents)
     .where(
-      and(eq(contents.slug, slug), eq(contents.channel, "shop"), eq(contents.status, "published")),
+      and(eq(contents.slug, slug), eq(contents.channel, "shop"), eq(contents.type, "service"), eq(contents.status, "published")),
     )
     .get()
   return row ? toDTO(row) : null
@@ -385,6 +386,12 @@ export async function saveContent(input: ContentInput, id?: string) {
   const excerpt = input.excerpt.trim()
   const body = input.body.trim()
   if (!body) return { ok: false as const, error: "Текст статьи пустой." }
+
+  if (title.length > 180 || excerpt.length > 2000 || body.length > 100000) {
+    return { ok: false as const, error: "Слишком большой заголовок, описание или текст." }
+  }
+  const mediaError = validateContentMedia(input.cover ?? "", body, input.type === "page" ? "public" : input.channel)
+  if (mediaError) return { ok: false as const, error: mediaError }
 
   const now = nowIso()
   const current = id ? await db.select().from(contents).where(eq(contents.id, id)).get() : undefined

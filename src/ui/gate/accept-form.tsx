@@ -18,7 +18,8 @@ export function AcceptForm({ token, email, name }: { token: string; email: strin
           name="password"
           type="password"
           required
-          minLength={10}
+          minLength={12}
+          maxLength={256}
           autoComplete="new-password"
           className="rounded-2xl border border-line bg-black/30 px-4 py-3 text-sm text-foreground normal-case outline-none focus:border-cyan"
         />
@@ -29,7 +30,8 @@ export function AcceptForm({ token, email, name }: { token: string; email: strin
           name="confirm"
           type="password"
           required
-          minLength={10}
+          minLength={12}
+          maxLength={256}
           autoComplete="new-password"
           className="rounded-2xl border border-line bg-black/30 px-4 py-3 text-sm text-foreground normal-case outline-none focus:border-cyan"
         />

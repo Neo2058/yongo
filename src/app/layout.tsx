@@ -1,17 +1,8 @@
 import type { Metadata } from "next"
-import { Manrope, Unbounded } from "next/font/google"
+import "@fontsource-variable/manrope"
+import "@fontsource-variable/unbounded"
 import "./globals.css"
 import { site } from "@/content/site"
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin", "cyrillic"],
-})
-
-const unbounded = Unbounded({
-  variable: "--font-unbounded",
-  subsets: ["latin", "cyrillic"],
-})
 
 export const dynamic = "force-dynamic"
 
@@ -32,7 +23,7 @@ export default function RootLayout({
     <html
       lang="ru"
       data-scroll-behavior="smooth"
-      className={`${manrope.variable} ${unbounded.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body id="top" className="flex min-h-dvh flex-col">
         {children}

@@ -3,31 +3,37 @@ import path from "node:path"
 import { NextResponse } from "next/server"
 import { requireBriefingUser } from "@/data/auth"
 import { getMediaRecord } from "@/data/media"
+import { mediaIsPublished } from "@/data/media-policy"
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ filename: string }> },
 ) {
   const user = await requireBriefingUser()
-  if (!user) return new NextResponse(null, { status: 404 })
+  if (!user) return new NextResponse(null, { status: 404, headers: { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Robots-Tag": "noindex, nofollow" } })
 
   const { filename } = await context.params
-  if (!/^[\w.-]+$/.test(filename)) {
-    return new NextResponse(null, { status: 404 })
+  if (!/^[A-Za-z0-9_-]{43}\.[a-z0-9]+$/.test(filename)) {
+    return new NextResponse(null, { status: 404, headers: { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Robots-Tag": "noindex, nofollow" } })
   }
   const record = await getMediaRecord(filename)
   if (!record || record.visibility !== "internal") {
-    return new NextResponse(null, { status: 404 })
+    return new NextResponse(null, { status: 404, headers: { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Robots-Tag": "noindex, nofollow" } })
+  }
+  if (user.role !== "owner" && !mediaIsPublished(filename, "internal")) {
+    return new NextResponse(null, { status: 404, headers: { "Cache-Control": "private, no-store" } })
   }
   try {
     const file = await readFile(path.join(process.cwd(), "storage", "internal", filename))
     return new NextResponse(file, {
       headers: {
         "Content-Type": record.mime,
-        "Cache-Control": "private, max-age=0, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+        "X-Robots-Tag": "noindex, nofollow",
+        "Cache-Control": "private, no-store",
       },
     })
   } catch {
-    return new NextResponse(null, { status: 404 })
+    return new NextResponse(null, { status: 404, headers: { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Robots-Tag": "noindex, nofollow" } })
   }
 }

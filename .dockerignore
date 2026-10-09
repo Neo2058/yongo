@@ -7,6 +7,12 @@ storage
 *.sqlite
 *.sqlite-*
 .DS_Store
-.env
-.env.local
-.env.production
+.env*
+!.env.example
+# Private workstation/account configuration and key material
+.aws
+.codex
+.agents
+.npmrc
+*.pem
+*.key

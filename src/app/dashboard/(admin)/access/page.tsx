@@ -13,7 +13,7 @@ export default async function AccessPage() {
         <p className="kicker">Managers</p>
         <h1 className="display mt-2 text-3xl">Приглашения</h1>
         <p className="mt-2 max-w-xl text-sm text-muted">
-          Создайте ссылку и перешлите руководителю. Ссылка одноразовая: по ней
+          Создайте ссылку и перешлите руководителю. Ссылка одноразовая и действует 7 дней: по ней
           задают пароль. Доступ действует, пока вы не нажмёте «Отозвать доступ».
           Неверный токен выглядит как 404.
         </p>
@@ -34,10 +34,12 @@ export default async function AccessPage() {
                   ? "ожидает активации"
                   : invite.status === "active"
                     ? "доступ выдан"
-                    : "отозвано"}
+                    : invite.status === "expired"
+                      ? "срок ссылки истёк"
+                      : "отозвано"}
               </p>
             </div>
-            {invite.status !== "revoked" ? (
+            {invite.status === "pending" || invite.status === "active" ? (
               <form action={revokeInviteAction}>
                 <input type="hidden" name="id" value={invite.id} />
                 <button className="glass-btn glass-btn-ghost" type="submit">

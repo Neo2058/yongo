@@ -6,6 +6,7 @@ import { leads } from "@/data/schema"
 import { newId, nowIso } from "@/data/crypto"
 import { requireOwner } from "@/data/auth"
 import { rateLimit } from "@/data/rate-limit"
+import { requestIp } from "@/data/request-ip"
 import { headers } from "next/headers"
 import { z } from "zod"
 import { migrate } from "@/data/migrate"
@@ -44,7 +45,7 @@ export async function createPublicLead(input: {
     return { ok: true as const }
   }
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local"
+  const ip = requestIp(await headers())
   const limited = rateLimit(`lead:${ip}`, 4, 60 * 60 * 1000)
   if (!limited.ok) {
     return { ok: false as const, error: "Слишком много заявок с этого адреса. Попробуйте позже." }

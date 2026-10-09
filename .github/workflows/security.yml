@@ -1,0 +1,32 @@
+name: Security and production build
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn lint
+      - run: yarn test:security
+      - run: yarn npm audit --environment production --recursive --no-deprecations
+      - run: yarn build
+      - run: yarn test:production
+      # A single documented build-only exception; all new findings fail CI.
+      - name: Audit build dependencies
+        shell: bash
+        run: |
+          set +e
+          yarn npm audit --recursive --all --no-deprecations --json > /tmp/yongo-audit.json
+          audit_status=$?
+          set -e
+          if [ "$audit_status" -gt 1 ]; then exit "$audit_status"; fi
+          if [ "$audit_status" -eq 1 ] && [ ! -s /tmp/yongo-audit.json ]; then exit 1; fi
+          node scripts/check-dependency-audit.mjs < /tmp/yongo-audit.json

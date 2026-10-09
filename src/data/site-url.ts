@@ -1,13 +1,12 @@
-export function publicSiteUrl() {
-  const fromEnv = process.env.SITE_URL?.trim().replace(/\/$/, "")
-  if (fromEnv) return fromEnv
-  return "http://localhost:3000"
-}
+import "server-only"
 
-export function originFromHeaders(h: Headers) {
-  const fromEnv = process.env.SITE_URL?.trim().replace(/\/$/, "")
-  if (fromEnv) return fromEnv
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"
-  const proto = h.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https")
-  return `${proto}://${host}`
+export function publicSiteUrl() {
+  const value = process.env.SITE_URL?.trim() || "http://localhost:3000"
+  const url = new URL(value)
+  if (url.username || url.password || url.search || url.hash || url.pathname !== "/" ||
+      !["http:", "https:"].includes(url.protocol) ||
+      (process.env.NODE_ENV === "production" && (url.protocol !== "https:" || url.hostname === "localhost"))) {
+    throw new Error("SITE_URL must be a public HTTPS origin in production.")
+  }
+  return url.origin
 }

@@ -1,5 +1,8 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases .yarn/releases
@@ -7,9 +10,6 @@ RUN yarn install --immutable
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json /app/yarn.lock /app/.yarnrc.yml ./
@@ -32,6 +32,7 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]

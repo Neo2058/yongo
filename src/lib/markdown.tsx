@@ -5,6 +5,7 @@ function escapeText(value: string) {
 }
 
 function allowedSrc(src: string) {
+  if (src.includes("..") || /[%?#\\]/.test(src)) return false
   return (
     src.startsWith("/images/") ||
     src.startsWith("/media/public/") ||

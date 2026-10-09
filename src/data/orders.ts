@@ -9,6 +9,7 @@ import { newId, nowIso } from "@/data/crypto"
 import { requireOwner } from "@/data/auth"
 import { migrate } from "@/data/migrate"
 import { rateLimit } from "@/data/rate-limit"
+import { requestIp } from "@/data/request-ip"
 import { getPublishedShopService } from "@/data/content"
 import { notifyOwnerAfter } from "@/data/mail"
 
@@ -58,7 +59,7 @@ export async function createPublicOrder(input: {
   }
   if (input.company) return { ok: true as const }
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local"
+  const ip = requestIp(await headers())
   const limited = rateLimit(`order:${ip}`, 4, 60 * 60 * 1000)
   if (!limited.ok) {
     return { ok: false as const, error: "Слишком много заказов с этого адреса. Попробуйте позже." }
